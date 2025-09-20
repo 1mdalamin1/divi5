@@ -25,26 +25,30 @@ module.exports = {
         ...defaultConfig.module,
 		rules: [
             //...defaultConfig.module.rules,
+			...defaultConfig.module.rules.filter(rule => 
+					!rule.test.toString().includes('js') && 
+					!rule.test.toString().includes('css') &&
+					!rule.test.toString().includes('scss')
+			),
 			{
 				test: /\.(js|jsx)$/,
 				exclude: /node_modules/,
-				use: 'babel-loader',
+				use: [
+					{
+						loader: 'babel-loader',
+						options: {
+							presets: ['@babel/preset-env', '@babel/preset-react']
+						}
+					}
+				]
 			},
 			{
 				test: /\.(css|scss)$/,
 				exclude: /node_modules/,
 				use: [
-					'style-loader',
-					{
-						loader: MiniCssExtractPlugin.loader,
-						options: {
-							esModule: false,
-						},
-					},
-					{
-						loader: 'css-loader',
-					},
-					'sass-loader',
+					MiniCssExtractPlugin.loader,
+					'css-loader',
+					'sass-loader'
 				],
 			},
 			{
@@ -70,7 +74,9 @@ module.exports = {
 
 	plugins: [
         ...defaultConfig.plugins,
-		new CleanWebpackPlugin(),
+		new CleanWebpackPlugin({
+			cleanOnceBeforeBuildPatterns: ['**/*', '!*.php'],
+		}),
 		new MiniCssExtractPlugin({
 			filename: '../css/[name].min.css',
 		}),
