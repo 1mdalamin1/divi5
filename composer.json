@@ -8,6 +8,15 @@
 		},
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"optimize-autoloader": true,
+		"preferred-install": "dist",
+		"sort-packages": true,
+		"discard-changes": true
+	},
+	"extra": {
+		"installer-paths": {
+			"vendor/{$name}/": ["type:wordpress-plugin", "type:wordpress-theme"]
 		}
 	},
 	"homepage": "https://wpmudev.com/",

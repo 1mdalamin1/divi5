@@ -14,8 +14,26 @@ remove clear && from package.json scripts
 		"build": "npm run compile && npm run translate && gulp build"
 	},
 
+	http://wpmudev.com.bd/wp-json/wpmudev/v1/drive/callback
+	
+	Client ID
+	246674914603-ma91eteqosacuq4ob642k830kt5v7lb0.apps.googleusercontent.com
+
+	Client Secret
+	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
+
+
+
+	http://divi5.com.bd/wp-json/wpmudev/v1/drive/callback
+	Client ID
+	159289418946-8dil1j5cthkho8l0gj6vk5606t4qbjh0.apps.googleusercontent.com
+	Client Secret
+	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
+
+
 */
 // write a function to check if the plugin is active
 
 # npm install --save-dev del gulp-zip
 # npm install --save-dev @babel/preset-react
+# composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction

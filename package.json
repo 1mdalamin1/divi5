@@ -10,8 +10,9 @@
 		"watch": "webpack --watch --mode development",
 		"compile": "webpack --progress --mode production",
 		"translate": "wp i18n make-pot ./ languages/wpmudev-plugin-test.pot --exclude=build,node_modules,src,tests,vendor --ignore-domain --allow-root",
+    "prebuild": "composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction",
 		"build": "npm run compile && npm run translate && gulp build",
-    "build:clean": "rm -rf build/ && npm run build"
+    "build:clean": "rm -rf build/ && npm run prebuild && npm run build"
 	},
 	"author": "WPMU DEV",
 	"license": "GPL-3.0",

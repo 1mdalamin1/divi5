@@ -15,113 +15,160 @@ function fileExists(filePath) {
 
 // Clean build directory
 function clean() {
-  return del(['build/**', '!build']);
+    return del(['build/**', '!build']);
 }
 
-
-// Copy only necessary files for production
-function copyFiles() {
-  const filesToCopy = [
-    'app/**',
-    'core/**',
-    'languages/**',
-    'assets/css/**',
-    'assets/fonts/**',
-    'assets/images/**',
-    'assets/js/**',
-    'src/**',
-    'vendor/**',
-    'wpmudev-plugin-test.php',
-    '!**/*.map',
-    '!**/QUESTIONS.md',
-    '!**/README.md',
-    '!**/CHANGELOG.md',
-    '!**/LICENSE.md',
-    '!**/package.json',
-    '!**/package-lock.json',
-    '!**/composer.json',
-    '!**/composer.lock',
-    '!**/webpack.config.js',
-    '!**/Gruntfile.js',
-    '!**/gulpfile.js',
-    '!**/phpcs.ruleset.xml',
-    '!**/phpunit.xml.dist',
-    '!src/**',
-    '!tests/**',
-    '!node_modules/**',
-    '!**/.git',
-    '!**/.gitignore',
-    '!**/.DS_Store',
-    // Exclude vendor tests, docs, examples
-    '!vendor/**/test/**',
-    '!vendor/**/tests/**',
-    '!vendor/**/doc/**',
-    '!vendor/**/docs/**',
-    '!vendor/**/example/**',
-    '!vendor/**/examples/**',
-    '!vendor/**/.git',
-    '!vendor/**/.gitignore',
-    '!vendor/**/.DS_Store'
-  ];
-
-  
-    // 'QUESTIONS.md',
-    // 'README.md',
-    // 'composer.json',
-  // Add optional files if they exist
-  const optionalFiles = [
-    'uninstall.php',
-    'changelog.txt'
-  ];
-
-  optionalFiles.forEach(file => {
-    if (fileExists(file)) {
-      filesToCopy.push(file);
-    }
-  });
-
-  return src(filesToCopy, { 
-    base: '.',
-    allowEmpty: true // Allow missing files
-  })
-  .pipe(dest('build/wpmudev-plugin-test/'));
-}
-
-
-// Create zip package
+// Optimized file copying - directly to zip without intermediate folder
 function createZip() {
-  const pkg = require('./package.json');
-  return src('build/wpmudev-plugin-test/**/*', { allowEmpty: true })
-        .pipe(zip(`${pkg.name}-${pkg.version}.zip`))
-        .pipe(dest('build/'));
-}
+    const pkg = require('./package.json');
+    
+    // Define files to include (optimized for minimal size)
+    const filesToInclude = [
+        // Core plugin files
+        'wpmudev-plugin-test.php',
+        'uninstall.php',
+        'changelog.txt',
+        
+        // App and core directories
+        'app/**',
+        'core/**',
+        'languages/**',
+        
+        // Assets (only compiled files)
+        'assets/css/**',
+        'assets/js/**',
+        'assets/fonts/**',
+        'assets/images/**',
+        
+        // Vendor - ONLY essential Google Drive files
+        'vendor/autoload.php',
+        'vendor/composer/**',
 
+        // Google API dependencies
+        'vendor/google/apiclient/**',
+        'vendor/google/apiclient-services/autoload.php',
+        'vendor/google/apiclient-services/src/Drive/**',
+        'vendor/google/apiclient-services/src/Drive.php',
+        'vendor/google/apiclient-services/src/DriveActivity/**',
+        'vendor/google/apiclient-services/src/DriveActivity.php',
+        'vendor/google/apiclient-services/src/DriveLabels/**',
+        'vendor/google/apiclient-services/src/DriveLabels.php',
+        'vendor/google/auth/**',
+        // 'vendor/google/apiclient-services/src/Google/Service/Drive.php',
+        // 'vendor/google/apiclient-services/src/Google/Service/Drive/*',
+        
+        // Guzzle HTTP dependencies
+        'vendor/guzzlehttp/**',
+        
+        // PSR standards
+        'vendor/psr/**',
+        
+        // Monolog logging
+        'vendor/monolog/**',
+        
+        // Firebase JWT
+        'vendor/firebase/**',
+        
+        // Security libraries
+        'vendor/paragonie/**',
+        'vendor/phpseclib/**',
+        
+        // HTTP utilities (this was missing!)
+        'vendor/ralouphie/**',
+        
+        // Symfony components (often required by other packages)
+        'vendor/symfony/**',
+        
+        // Exclude development files but keep essential source
+        '!vendor/**/test/**',
+        '!vendor/**/tests/**',
+        '!vendor/**/doc/**',
+        '!vendor/**/docs/**',
+        '!vendor/**/example/**',
+        '!vendor/**/examples/**',
+        '!vendor/**/.git/**',
+        '!vendor/**/.github/**',
+        '!vendor/**/*.md',
+        '!vendor/**/*.txt',
+        '!vendor/**/*.xml',
+        '!vendor/**/*.dist',
+        '!vendor/**/LICENSE',
+        '!vendor/**/CHANGELOG',
+        
+        // Exclude development tools but keep essential packages
+        '!vendor/squizlabs/**',
+        '!vendor/wp-coding-standards/**',
+        '!vendor/phpcompatibility/**',
+        '!vendor/phpcsstandards/**',
+        '!vendor/dealerdirect/**',
+        '!vendor/bin/**',
+        
+        // Exclude other Google services we don't need
+        // '!vendor/google/apiclient-services/src/!(Drive|Google/Service/Drive.php|Google/Service/Drive)/**',
+
+        // Exclude source files and development artifacts
+        '!src/**',
+        '!tests/**',
+        '!node_modules/**',
+        '!**/*.map',
+        '!**/package*.json',
+        '!**/composer*.json',
+        '!**/webpack.config.js',
+        '!**/Gruntfile.js',
+        '!**/gulpfile.js',
+        '!**/phpcs.ruleset.xml',
+        '!**/phpunit.xml.dist',
+        '!**/.git',
+        '!**/.gitignore',
+        '!**/.DS_Store',
+        '!**/README.md',
+        '!**/CHANGELOG.md',
+        '!**/LICENSE.md',
+        '!**/QUESTIONS.md'
+    ];
+
+    // Add optional files if they exist
+    const optionalFiles = [
+        'uninstall.php',
+        'changelog.txt'
+    ];
+
+    optionalFiles.forEach(file => {
+        if (fileExists(file)) {
+            filesToInclude.push(file);
+        }
+    });
+
+    return src(filesToInclude, { 
+        base: '.',
+        allowEmpty: true
+    })
+    .pipe(zip(`${pkg.name}-${pkg.version}.zip`))
+    .pipe(dest('build/'));
+}
 
 // Verify build
 function verifyBuild() {
-    const buildDir = 'build/wpmudev-plugin-test/';
+    const zipFile = `build/wpmudev-plugin-test-${require('./package.json').version}.zip`;
     
-    // Check if main plugin file exists
-    if (!fileExists(path.join(buildDir, 'wpmudev-plugin-test.php'))) {
-        throw new Error('Main plugin file not found in build!');
+    if (!fileExists(zipFile)) {
+        throw new Error('Zip file was not created!');
     }
 
-    // Check if assets were built
-    if (!fileExists(path.join(buildDir, 'assets/js/drivetestpage.min.js'))) {
-        throw new Error('Compiled JavaScript not found!');
+    // Get zip file size
+    const stats = fs.statSync(zipFile);
+    const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+    
+    console.log(`✓ Build verification passed - Zip size: ${fileSizeMB} MB`);
+    
+    if (fileSizeMB > 10) {
+        console.warn('⚠️  Warning: Zip file is larger than 10MB. Consider optimizing vendor dependencies.');
     }
-
-    console.log('✓ Build verification passed');
+    
     return Promise.resolve();
 }
 
-function cleanUnzipped() {
-  return del(['build/wpmudev-plugin-test']);
-}
 
-
-// Main build task
-// exports.default = series(clean, createZip);
-
-exports.build = series(clean, copyFiles, verifyBuild, createZip, cleanUnzipped);
+// Main build task - direct to zip without intermediate folder
+exports.build = series(clean, createZip, verifyBuild);
 exports.default = exports.build;

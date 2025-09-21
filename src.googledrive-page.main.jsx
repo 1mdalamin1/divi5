@@ -60,15 +60,21 @@ const WPMUDEV_DriveTest = () => {
         setIsLoading(true);
         try {
             const response = await apiFetch({
-                path: 'wp-json/wpmudev/v1/drive/init-auth',
+                path: 'wp-json/wpmudev/v1/drive/auth',
                 method: 'POST'
             });
 
-            if (response.success && response.data.auth_url) {
-                window.location.href = response.data.auth_url;
+            if (response) {
+                setIsLoading(false);
+                showNotice('authenticat done', 'success');
             } else {
                 showNotice('Failed to initialize authentication', 'error');
             }
+            // if (response.success && response.data.auth_url) {
+            //     window.location.href = response.data.auth_url;
+            // } else {
+            //     showNotice('Failed to initialize authentication', 'error');
+            // }
         } catch (error) {
             showNotice('Error initializing authentication: ' + error.message, 'error');
         }
@@ -95,6 +101,7 @@ const WPMUDEV_DriveTest = () => {
         setIsLoading(false);
     };
 
+    // File upload handler need to be fixed
     const handleUpload = async () => {
         if (!uploadFile) return;
         

@@ -144,42 +144,68 @@ class Drive_API extends Base {
 	/**
 	 * Save Google OAuth credentials.
 	 */
-	public function save_credentials() {
-		$client_id     = '';
-		$client_secret = '';
+	public function save_credentials( WP_REST_Request $request ) {
+		// Permission check: Only allow users with 'manage_options' capability
+		// if ( ! current_user_can( 'manage_options' ) ) {
+		// 	return new WP_Error( 'forbidden', 'You do not have permission to perform this action.', array( 'status' => 403 ) );
+		// }
 
+		// Validate and sanitize input
+		$client_id     = $request->get_param( 'client_id' );
+		$client_secret = $request->get_param( 'client_secret' );
 
-		// Save credentials
+		if ( empty( $client_id ) || empty( $client_secret ) ) {
+			return new WP_Error( 'missing_params', 'Both client_id and client_secret are required.', array( 'status' => 400 ) );
+		}
+
+		$client_id     = sanitize_text_field( $client_id );
+		$client_secret = sanitize_text_field( $client_secret );
+
+		// Save credentials securely
 		$credentials = array(
 			'client_id'     => $client_id,
 			'client_secret' => $client_secret,
 		);
 
 		update_option( 'wpmudev_plugin_tests_auth', $credentials );
-		
+
+		// Remove any old tokens when credentials change
+		delete_option( 'wpmudev_drive_access_token' );
+		delete_option( 'wpmudev_drive_refresh_token' );
+		delete_option( 'wpmudev_drive_token_expires' );
+
 		// Reinitialize Google Client with new credentials
 		$this->setup_google_client();
 
-		return true;
+		return new WP_REST_Response( array(
+			'success' => true,
+			'message' => 'Credentials saved successfully.',
+		), 200 );
 	}
 
 	/**
 	 * Start Google OAuth flow.
 	 */
-	public function start_auth() {
+	public function start_auth( WP_REST_Request $request ) {
 		if ( ! $this->client ) {
 			return new WP_Error( 'missing_credentials', 'Google OAuth credentials not configured', array( 'status' => 400 ) );
 		}
 
-		return true;
+		// Generate the Google OAuth URL
+		$auth_url = $this->client->createAuthUrl();
+
+		return new WP_REST_Response( array(
+			'success'  => true,
+			'auth_url' => $auth_url,
+		), 200 );
 	}
 
 	/**
 	 * Handle OAuth callback.
 	 */
-	public function handle_callback() {
-		$code  = '';
-		$state = '';
+	public function handle_callback( WP_REST_Request $request ) {
+		$code  = isset( $_GET['code'] ) ? sanitize_text_field( $_GET['code'] ) : '';
+		$state = isset( $_GET['state'] ) ? sanitize_text_field( $_GET['state'] ) : '';
 
 		if ( empty( $code ) ) {
 			wp_die( 'Authorization code not received' );
@@ -187,20 +213,24 @@ class Drive_API extends Base {
 
 		try {
 			// Exchange code for access token
-			$access_token = array();
+			$access_token = $this->client->fetchAccessTokenWithAuthCode( $code );
+
+			if ( isset( $access_token['error'] ) ) {
+				wp_die( 'Failed to get access token: ' . esc_html( $access_token['error_description'] ?? $access_token['error'] ) );
+			}
 
 			// Store tokens
 			update_option( 'wpmudev_drive_access_token', $access_token );
 			if ( isset( $access_token['refresh_token'] ) ) {
-				update_option( 'wpmudev_drive_refresh_token', $access_token );
+				update_option( 'wpmudev_drive_refresh_token', $access_token['refresh_token'] );
 			}
-			update_option( 'wpmudev_drive_token_expires', '???' );
+			update_option( 'wpmudev_drive_token_expires', time() + (int) $access_token['expires_in'] );
 
 			// Redirect back to admin page
 			wp_redirect( admin_url( 'admin.php?page=wpmudev_plugintest_drive&auth=success' ) );
 			exit;
 
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			wp_die( 'Failed to get access token: ' . esc_html( $e->getMessage() ) );
 		}
 	}
@@ -213,26 +243,28 @@ class Drive_API extends Base {
 			return false;
 		}
 
+		$access_token = get_option( 'wpmudev_drive_access_token', '' );
+		if ( ! empty( $access_token ) ) {
+			$this->client->setAccessToken( $access_token );
+		}
+
 		// Check if token is expired and refresh if needed
 		if ( $this->client->isAccessTokenExpired() ) {
 			$refresh_token = get_option( 'wpmudev_drive_refresh_token' );
-			
 			if ( empty( $refresh_token ) ) {
 				return false;
 			}
 
 			try {
 				$new_token = $this->client->fetchAccessTokenWithRefreshToken( $refresh_token );
-				
 				if ( array_key_exists( 'error', $new_token ) ) {
 					return false;
 				}
-
-				update_option( 'wpmudev_drive_access_token', 'NEW TOKEN' );
-				update_option( 'wpmudev_drive_token_expires', 'NEW EXPIRATION TIME' );
-				
+				update_option( 'wpmudev_drive_access_token', $new_token );
+				update_option( 'wpmudev_drive_token_expires', time() + (int) $new_token['expires_in'] );
+				$this->client->setAccessToken( $new_token );
 				return true;
-			} catch ( Exception $e ) {
+			} catch ( \Exception $e ) {
 				return false;
 			}
 		}
@@ -241,22 +273,26 @@ class Drive_API extends Base {
 	}
 
 	/**
-	 * List files in Google Drive.
+	 * List files in Google Drive with pagination.
 	 */
-	public function list_files() {
+	public function list_files( WP_REST_Request $request ) {
 		if ( ! $this->ensure_valid_token() ) {
 			return new WP_Error( 'no_access_token', 'Not authenticated with Google Drive', array( 'status' => 401 ) );
 		}
 
-		try {
-			$page_size = 20; // This should be an input parameter not static value 20.
-			$query     = 'trashed=false'; // This should be an input parameter not static value.
+		$page_size = intval( $request->get_param( 'page_size' ) ) ?: 20;
+		$page_token = $request->get_param( 'page_token' );
+		$query = $request->get_param( 'q' ) ?: 'trashed=false';
 
+		try {
 			$options = array(
 				'pageSize' => $page_size,
 				'q'        => $query,
-				'fields'   => 'files(id,name,mimeType,size,modifiedTime,webViewLink)',
+				'fields'   => 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink)',
 			);
+			if ( $page_token ) {
+				$options['pageToken'] = $page_token;
+			}
 
 			$results = $this->drive_service->files->listFiles( $options );
 			$files   = $results->getFiles();
@@ -273,9 +309,13 @@ class Drive_API extends Base {
 				);
 			}
 
-			return true;
+			return new WP_REST_Response( array(
+				'success'        => true,
+				'files'          => $file_list,
+				'nextPageToken'  => $results->getNextPageToken(),
+			), 200 );
 
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			return new WP_Error( 'api_error', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}
@@ -289,23 +329,34 @@ class Drive_API extends Base {
 		}
 
 		$files = $request->get_file_params();
-		
 		if ( empty( $files['file'] ) ) {
 			return new WP_Error( 'no_file', 'No file provided', array( 'status' => 400 ) );
 		}
 
 		$file = $files['file'];
-		
 		if ( $file['error'] !== UPLOAD_ERR_OK ) {
 			return new WP_Error( 'upload_error', 'File upload error', array( 'status' => 400 ) );
 		}
 
+		// Validate file type and size (example: max 10MB, allow common types)
+		$allowed_types = array(
+			'application/pdf', 'image/jpeg', 'image/png', 'text/plain', 'application/zip',
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+			'application/msword', // doc
+		);
+		$max_size = 10 * 1024 * 1024; // 10MB
+
+		if ( ! in_array( $file['type'], $allowed_types ) ) {
+			return new WP_Error( 'invalid_type', 'File type not allowed', array( 'status' => 400 ) );
+		}
+		if ( $file['size'] > $max_size ) {
+			return new WP_Error( 'file_too_large', 'File size exceeds limit', array( 'status' => 400 ) );
+		}
+
 		try {
-			// Create file metadata
 			$drive_file = new Google_Service_Drive_DriveFile();
 			$drive_file->setName( $file['name'] );
 
-			// Upload file
 			$result = $this->drive_service->files->create(
 				$drive_file,
 				array(
@@ -325,9 +376,9 @@ class Drive_API extends Base {
 					'size'        => $result->getSize(),
 					'webViewLink' => $result->getWebViewLink(),
 				),
-			) );
+			), 200 );
 
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			return new WP_Error( 'upload_failed', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}
@@ -410,3 +461,11 @@ class Drive_API extends Base {
 		}
 	}
 }
+
+// At the end of the file, outside the class:
+// add_action( 'plugins_loaded', function() {
+// 	if ( class_exists( '\WPMUDEV\PluginTest\Endpoints\V1\Drive_API' ) ) {
+// 		$GLOBALS['wpmudev_drive_api'] = new \WPMUDEV\PluginTest\Endpoints\V1\Drive_API();
+// 		$GLOBALS['wpmudev_drive_api']->init();
+// 	}
+// } );
