@@ -146,9 +146,9 @@ class Drive_API extends Base {
 	 */
 	public function save_credentials( WP_REST_Request $request ) {
 		// Permission check: Only allow users with 'manage_options' capability
-		// if ( ! current_user_can( 'manage_options' ) ) {
-		// 	return new WP_Error( 'forbidden', 'You do not have permission to perform this action.', array( 'status' => 403 ) );
-		// }
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error( 'forbidden', 'You do not have permission to perform this action.', array( 'status' => 403 ) );
+		}
 
 		// Validate and sanitize input
 		$client_id     = $request->get_param( 'client_id' );

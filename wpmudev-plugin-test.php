@@ -53,6 +53,9 @@ if ( ! defined( 'WPMUDEV_PLUGINTEST_SUI_VERSION' ) ) {
 	define( 'WPMUDEV_PLUGINTEST_SUI_VERSION', '2.12.23' );
 }
 
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once __DIR__ . '/app/admin-pages/class-posts-maintenance-cli.php';
+}
 
 /**
  * WPMUDEV_PluginTest class.

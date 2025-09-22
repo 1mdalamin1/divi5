@@ -78,27 +78,27 @@ class Posts_Maintenance extends Base {
 	}
 
 	protected function view() {
-		$post_types = get_post_types( array( 'public' => true ), 'objects' );
+		$post_types = get_post_types( array( 'public' => true ), 'objects' ); // array( 'post', 'page' );
 		?>
 		<div id="<?php echo esc_attr( $this->unique_id ); ?>" class="sui-wrap">
 			<h2><?php esc_html_e( 'Posts Maintenance', 'wpmudev-plugin-test' ); ?></h2>
 			<form id="wpmudev-scan-posts-form">
 				<p><?php esc_html_e( 'Select post types to scan:', 'wpmudev-plugin-test' ); ?></p>
-				<label>
+				<!-- <label>
 					<input type="checkbox" name="post_types[]" value="post" checked>
-					<?php esc_html_e( 'Posts', 'wpmudev-plugin-test' ); ?>
+					<?php // esc_html_e( 'Posts', 'wpmudev-plugin-test' ); ?>
 				</label><br>
 				<label>
 					<input type="checkbox" name="post_types[]" value="page">
-					<?php esc_html_e( 'Pages', 'wpmudev-plugin-test' ); ?>
-				</label><br>
+					<?php // esc_html_e( 'Pages', 'wpmudev-plugin-test' ); ?>
+				</label><br> -->
 
-				<?php // foreach ( $post_types as $pt ) : ?>
-					<!-- <label>
-						<input type="checkbox" name="post_types[]" value="<?php // echo esc_attr( $pt->name ); ?>" checked>
-						<?php // echo esc_html( $pt->labels->singular_name ); ?>
-					</label><br> -->
-				<?php // endforeach; ?>
+				<?php foreach ( $post_types as $pt ) : ?>
+					<label>
+						<input type="checkbox" name="post_types[]" value="<?php echo esc_attr( $pt->name ); ?>" checked>
+						<?php echo esc_html( $pt->labels->singular_name ); ?>
+					</label><br>
+				<?php endforeach; ?>
 				<br>
 				<button type="button" class="button button-primary" id="wpmudev-scan-posts-btn"><?php esc_html_e( 'Scan Posts', 'wpmudev-plugin-test' ); ?></button>
 			</form>
@@ -106,7 +106,7 @@ class Posts_Maintenance extends Base {
 		</div>
 		<script>
 		(function($){
-		console.log('test ajax url --> ', ajaxurl);
+		// console.log('test ajax url --> ', ajaxurl);
 
 			var interval;
 			$('#wpmudev-scan-posts-btn').on('click', function(e){
