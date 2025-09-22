@@ -91,7 +91,7 @@ class Google_Drive extends Base {
 
 	public function register_admin_page() {
 		$page = add_menu_page(
-			'Google Drive Test',
+			__('Google Drive Test','wpmudev-plugin-test'),
 			$this->page_title,
 			'manage_options',
 			$this->page_slug,
@@ -100,7 +100,25 @@ class Google_Drive extends Base {
 			7
 		);
 
+		
+		//add submenu 2
+    // add_submenu_page(
+		// 	$this->page_slug, // wpmudev_plugintest_drive
+		// 	__('Posts Maintenance ','wpmudev-plugin-test'),
+		// 	__('Posts Maintenance ','wpmudev-plugin-test'),
+		// 	'manage_options',
+		// 	'wpmudev_plugintest_posts_maintenance',
+		// 	array( $this, 'wpmudev_plugintest_posts_maintenance_setting_fun' )
+    // );
+		
+
 		add_action( 'load-' . $page, array( $this, 'prepare_assets' ) );
+	}
+
+	public function wpmudev_plugintest_posts_maintenance_setting_fun() {
+		
+		include WPMUDEV_PLUGINTEST_DIR . 'app/admin-pages/posts-maintenance.php';
+
 	}
 
 	/**
