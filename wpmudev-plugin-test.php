@@ -4,7 +4,7 @@
  * Description:       A plugin focused on testing coding skills.
  * Requires at least: 6.1
  * Requires PHP:      7.4
- * Version:           0.1.1
+ * Version:           1.0.9
  * Author:            PLEASE ADD YOU FULL NAME HERE
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -25,7 +25,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
 // Plugin version.
 if ( ! defined( 'WPMUDEV_PLUGINTEST_VERSION' ) ) {
-	define( 'WPMUDEV_PLUGINTEST_VERSION', '0.1.0' );
+	define( 'WPMUDEV_PLUGINTEST_VERSION', '1.0.9' );
 }
 
 // Define WPMUDEV_PLUGINTEST_PLUGIN_FILE.

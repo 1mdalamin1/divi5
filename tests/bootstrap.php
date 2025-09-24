@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file.
  *
- * @package Wpmudev_Plugin_Test
+ * @package Divi5
  */
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );

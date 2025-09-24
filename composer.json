@@ -32,9 +32,12 @@
 		"google/apiclient": "^2.15"
 	},
 	"require-dev": {
-		"wp-coding-standards/wpcs": "^3.0",
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-		"phpcompatibility/phpcompatibility-wp": "^2.1"
+		"humbug/php-scoper": "^0.17.5",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"phpunit/phpunit": "^9.6",
+		"wp-coding-standards/wpcs": "^3.0",
+		"yoast/phpunit-polyfills": "^1.1"
 	},
 	"scripts": {
 		"post-install-cmd": [
@@ -42,9 +45,11 @@
 		],
 		"post-update-cmd": [
 			"Google_Task_Composer::cleanup"
-		]
+		],
+		"test": "phpunit",
+		"test-file": "phpunit tests/admin-pages/test-class-posts-maintenance.php"
 	},
 	"autoload": {
-        "classmap": ["core/", "app/"]
+		"classmap": ["core/", "app/"]
 	}
 }

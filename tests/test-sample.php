@@ -2,7 +2,7 @@
 /**
  * Class SampleTest
  *
- * @package Wpmudev_Plugin_Test
+ * @package Divi5
  */
 
 /**
